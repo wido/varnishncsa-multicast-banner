@@ -5,7 +5,7 @@ from subprocess import call
 
 def callback(ch, method, properties, body):
     fields = body.split(" ")
-    exitCode = call(["varnishadm", "ban", "req.url == " + fields[1]]) 
+    exitCode = call(["varnishadm", "ban", "req.url == " + fields[1] + " && req.http.host == " + fields[0]]) 
 
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 channel = connection.channel()
