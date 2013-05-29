@@ -59,9 +59,11 @@ sub vcl_recv {
         }
     }
 
-    /* Request various incoming headers */
+    /* Request various incoming headers we don't need */
     unset req.http.Cookie;
     unset req.http.DNT;
+    unset req.http.User-Agent;
+    unset req.http.Referer;
 
     /* We only deal with these types of HTTP request, we can block the rest */
     if (req.request != "GET" &&
@@ -73,12 +75,6 @@ sub vcl_recv {
        req.request != "DELETE") {
         error 400 "Bad Request";
     }
-
-    /* Ban on DELETE or PUT request */
-    //if (req.request == "DELETE" || req.request == "PUT") {
-    //    ban("req.url == " + req.url);
-    //    return (pass);
-    //}
 
     /* When this header is sent we can't cache anything */
     if (req.http.Authorization) {
