@@ -10,6 +10,8 @@ import time
 multicast_group = 'ff02::6789'
 multicast_port = 10000;
 
+keepRunning = True
+
 def varnishban(host, url):
     subprocess.Popen(["varnishadm", "ban", "req.url == " + url + " && req.http.host == " + host], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
@@ -41,27 +43,30 @@ def receiversocket(addr, port):
 
     return sock
 
+def logmsg(name, message):
+    print "[ %s ] [ %s ] %s" % (time.ctime(time.time()), name, message)
+
 class mSenderThread(threading.Thread):
     def __init__(self, threadID, name, group, port):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.group = group
         self.port = port
+        self.name = name
  
     def run(self):
-        print "[" + self.name +  "] Sending on multicast group " + self.group + ":" + str(self.port)
-
+        logmsg(self.name, "Sending on multicast group %s:%s" % (self.group, self.port))
         sock = sendersocket(self.group)
 
         try:
             p = subprocess.Popen(['/usr/bin/varnishncsa', '-F', '%m %{Host}i %U'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            while(True):
+            while keepRunning:
                 retcode = p.poll()
                 line = p.stdout.readline().strip()
                 method, host, uri = line.split()
                 if (method == "PUT") or (method == "DELETE"):
                     message = host + " " + uri
-                    print "[" + self.name + "] Sending ban for " + host + uri
+                    logmsg(self.name, "Sending ban for %s%s" %  (host, uri))
                     sent = sock.sendto(message, (self.group, self.port))
 
         except (KeyboardInterrupt, SystemExit):
@@ -77,18 +82,18 @@ class mReceiverThread(threading.Thread):
         self.threadID = threadID
         self.group = group
         self.port = port
+        self.name = name
 
     def run(self):
-        print "[" + self.name + "] Listening on multicast group " + self.group + ":" + str(self.port) + ""
-
+        logmsg(self.name, "Listening on multicast group %s:%s" % (self.group, self.port))
         sock = receiversocket(self.group, self.port)
 
         try:
-            while True:
+            while keepRunning:
                 data, sender = sock.recvfrom(1500)
-                host, url = data.strip().split()
-                print "[" + self.name + "] Received ban for " + host + url
-                varnishban(host, url)
+                host, uri = data.strip().split()
+                logmsg(self.name, "Received ban for %s%s" %  (host, uri))
+                varnishban(host, uri)
 
         except (KeyboardInterrupt, SystemExit):
             raise
@@ -109,10 +114,8 @@ def main():
         except (KeyboardInterrupt, SystemExit):
             raise
         finally:
+            keepRunning = False
             break
-        
-    #for t in threading.enumerate():
-    #    t.stop()
 
 if __name__ == '__main__':
     main()

@@ -1,0 +1,47 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE=1
+export DH_OPTIONS
+
+configure: configure-stamp
+configure-stamp:
+	dh_testdir
+	touch configure-stamp
+
+build: build-indep
+
+build-indep: build-indep-stamp
+
+build-indep-stamp: configure
+	touch $@
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-arch-stamp build-indep-stamp configure-stamp
+	dh_clean
+
+install:
+	dh_testdir
+	dh_testroot
+	dh_prep -s
+
+	mkdir -p debian/tmp/usr/bin
+	cp varnishncsa-multicast-banner.py debian/tmp/usr/bin/varnishncsa-multicast-banner
+
+	dh_installdirs
+	dh_install
+
+binary: install
+	dh_install
+	dh_installchangelogs
+	dh_installdocs
+	dh_installinit
+	dh_link
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+

@@ -1,0 +1,15 @@
+Source: varnishncsa-multicast-banner
+Section: libs
+Priority: extra
+Maintainer: Wido den Hollander <wido@42on.com>
+Standards-Version: 3.8.1
+Homepage: http://www.github.com/wido/varnishncsa-multicast-banner
+
+Package: varnishncsa-multicast-banner
+Architecture: all
+Depends: python (>= 2.7), varnish (>= 3)
+Description: A process which automatically bans all PUT or DELETE requests that come in
+ Using multicast it sends out the objects so you have some cache consistency with multiple
+ Varnish caches.
+ .
+ This was developed for using with the Ceph RADOS Gateway to have Varnish cache in front of it.

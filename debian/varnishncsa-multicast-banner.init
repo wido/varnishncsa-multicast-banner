@@ -1,0 +1,46 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          varnishncsa-multicast-banner
+# Required-Start:    $network $local_fs
+# Required-Stop:     $network $local_fs
+# Default-Start:     3 4 5
+# Default-Stop:      0 1 2 6
+# Short-Description: Start/stop Varnish Multicast Object Banner
+# Description: Start/stop Varnish Multicast Object Banner
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+NAME="varnishncsa-multicast-banner"
+DESC="Varnish object banner"
+PIDFILE=/var/run/"$NAME".pid
+DAEMON="/usr/bin/$NAME"
+
+case "$1" in
+    start)
+        log_daemon_msg "Starting $DESC" "$NAME"
+        if [ -s "$PIDFILE" ] && kill -0 $(cat "$PIDFILE") >/dev/null 2>&1; then
+            log_daemon_msg "$PROGNAME apparently already running"
+            log_end_msg 0
+            exit 0
+        fi
+        start-stop-daemon --start --pidfile $PIDFILE --make-pidfile --exec $DAEMON --background
+        log_end_msg 0
+        ;;
+    stop)
+        log_daemon_msg "Stopping $DESC" "$NAME"
+        start-stop-daemon --stop --pidfile $PIDFILE
+        log_end_msg 0
+        ;;
+    restart|force-reload)
+        $0 stop
+        $0 start
+        ;;
+    *)
+        log_success_msg "Usage: $0 {start|stop|restart|force-reload"
+        exit 1
+        ;;
+esac
+
+exit 0
