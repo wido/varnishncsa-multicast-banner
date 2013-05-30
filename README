@@ -1,0 +1,7 @@
+This tool is for use with the Ceph RADOS Gateway
+
+This way you can run multiple Varnish caches in front of a Ceph RADOS Gateway
+and still cache.
+
+Via multicast the nodes will (Layer 2) send out any PUT or DELETE requests they got in
+and ban those objects from their cache.
