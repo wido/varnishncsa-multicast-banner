@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import thread
 import socket
 import struct
 import sys
@@ -12,8 +13,8 @@ def varnishban(host, url):
     #exitCode = subprocess.call(["varnishadm", "ban", "req.url == " + url + " && req.http.host == " + host])
     subprocess.Popen(["varnishadm", "ban", "req.url == " + url + " && req.http.host == " + host], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-def multicast_sender(group):
-    addrinfo = socket.getaddrinfo(multicast_group, None)[0]
+def multicast_sender(thread_name, group, port):
+    addrinfo = socket.getaddrinfo(group, None)[0]
 
     sock = socket.socket(addrinfo[0], socket.SOCK_DGRAM)
 
@@ -33,7 +34,7 @@ def multicast_sender(group):
             if (method == "PUT") or (method == "DELETE"):
                 message = host + " " + uri
                 print "Sending ban for " + host + uri
-                sent = sock.sendto(message, (addrinfo[4][0], multicast_port))
+                sent = sock.sendto(message, (addrinfo[4][0], port))
 
     except (KeyboardInterrupt, SystemExit):
         raise
@@ -42,13 +43,13 @@ def multicast_sender(group):
         p.kill()
         sock.close()
 
-def multicast_receiver(group):
-    addrinfo = socket.getaddrinfo(multicast_group, None)[0]
+def multicast_receiver(thread_name, group, port):
+    addrinfo = socket.getaddrinfo(group, None)[0]
     sock = socket.socket(addrinfo[0], socket.SOCK_DGRAM)
 
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-    sock.bind(('', multicast_port))
+    sock.bind(('', port))
 
     group_bin = socket.inet_pton(addrinfo[0], addrinfo[4][0])
 
@@ -73,12 +74,14 @@ def multicast_receiver(group):
         sock.close()
 
 def main():
-    if "--listener" in sys.argv[1:]:
-        multicast_sender(multicast_group)
-    elif "--banner" in sys.argv[1:]:
-        multicast_receiver(multicast_group)
-    else:
-        print "Usage: " + sys.argv[0] + " --listener | --banner"
+    try:
+        thread.start_new_thread( multicast_sender, ("Listener", multicast_group, multicast_port))
+        thread.start_new_thread( multicast_receiver, ("Thread-2", multicast_group, multicast_port))
+    except:
+        print "Error: unable to start thread"
+
+    while 1:
+        pass
 
 if __name__ == '__main__':
     main()
